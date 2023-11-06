@@ -6,6 +6,7 @@ char	*get_next_line(int fd)
 
 /*** read file (read) ***/
 // implement logic to not read a binary file
+// protoype read(): "ssize_t	read(int fildes, void *buf, size_t nbyte);"
 
 /*** free memory (free) ***/
 }
