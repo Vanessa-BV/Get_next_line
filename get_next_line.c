@@ -36,7 +36,7 @@ void	read_and_stash(int fd, t_list **stash, int *char_read)
 		buff = malloc(sizeof(char) * (BUFFER_SIZE + 1));
 		if (buff == NULL)
 			return ;
-		*char_read = (int)read(fd, buff, BUFFER_SIZE); //int returns size_T, hence typecasting to int here
+		*char_read = read(fd, buff, BUFFER_SIZE);
 		if ((*stash == NULL && *char_read == 0) || *char_read == -1)
 		{
 			free(buff);
