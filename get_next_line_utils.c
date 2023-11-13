@@ -53,9 +53,10 @@ void	generate_line(char **line, t_list *stash)
 		}
 		stash = stash->next;
 	}
-	*line = malloc(sizeof(char) * (len +1));
+	*line = malloc(sizeof(char) * (len + 1));
 }
 
+/*frees the entire stash*/
 void	free_stash(t_list *stash)
 {
 	t_list	*current;
@@ -76,7 +77,7 @@ int	ft_strlen(const char *str)
 	int	len;
 
 	len = 0;
-	while  (*str)
+	while  (*str++)
 		len++;
 	return (len);
 }
