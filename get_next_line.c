@@ -140,23 +140,23 @@ void	clean_stash(t_list **stash)
 	*stash = clean_node;
 }
 
-int	main(void)
-{
-	int		file_descriptor;
-	char	*line;
+// int	main(void)
+// {
+// 	int		file_descriptor;
+// 	char	*line;
 
-	file_descriptor = open("file", O_RDONLY);
-	line = get_next_line(file_descriptor);
-	if (file_descriptor == -1)
-	{
-		printf("File could not be opened.\n");
-		return -1;
-	}
-	if (line == NULL)
-		printf("No line could be printed.\n");
-	else
-		printf("%s\n", line);
-	close(file_descriptor);
-	free (line);
-	return (0);
-}
+// 	file_descriptor = open("file", O_RDONLY);
+// 	line = get_next_line(file_descriptor);
+// 	if (file_descriptor == -1)
+// 	{
+// 		printf("File could not be opened.\n");
+// 		return -1;
+// 	}
+// 	if (line == NULL)
+// 		printf("No line could be printed.\n");
+// 	else
+// 		printf("%s\n", line);
+// 	close(file_descriptor);
+// 	free (line);
+// 	return (0);
+// }
