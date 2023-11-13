@@ -3,7 +3,7 @@
 char	*get_next_line(int fd)
 {
 	char			*line;
-	static t_list	*stash = NULL;
+	static t_list	*stash;
 	int				no_char_read;
 
 	if (fd == -1 || BUFFER_SIZE < 0 || read(fd, &line, 0) == -1)
@@ -20,35 +20,37 @@ char	*get_next_line(int fd)
 	clean_stash(&stash);
 	if (line[0] == '\0')
 	{
-		free_stash(stash)
+		free_stash(stash);
 		stash = NULL;
 		return (NULL);
 	}
 	return (line);
 }
 
-void	read_and_stash(int fd, t_list **stash, int *char_read)
+/*uses read() to add characters to the stash*/
+void	read_and_stash(int fd, t_list **stash, int *no_char_read)
 {
 	char	*buff;
 
-	while (!found_newline(*stash) && char_read != 0)
+	while (!found_newline(*stash) && no_char_read != 0)
 	{
 		buff = malloc(sizeof(char) * (BUFFER_SIZE + 1));
 		if (buff == NULL)
-			return ;
-		*char_read = read(fd, buff, BUFFER_SIZE);
-		if ((*stash == NULL && *char_read == 0) || *char_read == -1)
+			return;
+		*no_char_read = (int)read(fd, buff, BUFFER_SIZE); //int returns size_t, hence typecasting to int here - but maybe not even necessary..to be tested
+		if ((*stash == NULL && *no_char_read == 0) || *no_char_read == -1)
 		{
 			free(buff);
-			return ;
+			return;
 		}
-		buff[*char_read] = '\0';
-		add_to_stash(stash, buff, *char_read);
+		buff[*no_char_read] = '\0';
+		add_to_stash(stash, buff, *no_char_read);
 		free(buff);
 	}
 }
 
-void	add_to_stash(t_list **stash, char *buff, int	char_read)
+/*adds content of our buffer to the end of our stash*/
+void	add_to_stash(t_list **stash, char *buff, int no_char_read)
 {
 	int		i;
 	t_list	*last;
@@ -58,11 +60,11 @@ void	add_to_stash(t_list **stash, char *buff, int	char_read)
 	if (new_node == NULL)
 		return ;
 	new_node->next = NULL;
-	new_node->content = malloc(sizeof(char) * (char_read + 1));
+	new_node->content = malloc(sizeof(char) * (no_char_read + 1));
 	if (new_node->content == NULL)
 		return;
 	i = 0;
-	while (buff[i] && i < char_read)
+	while (buff[i] && i < no_char_read)
 	{
 		new_node->content[i] = buff[i]; //copy into the new node everything from the buffer that has been read
 		i++;
@@ -77,6 +79,8 @@ void	add_to_stash(t_list **stash, char *buff, int	char_read)
 	last->next = new_node;
 }
 
+/*extracts all characters from our stash and stores them in our line*/
+/*stopping after the first '\n' it encounters*/
 void	extract_line(t_list *stash, char **line)
 {
 	int	i;
@@ -93,7 +97,7 @@ void	extract_line(t_list *stash, char **line)
 		i = 0;
 		while (stash->content[i])
 		{
-			if (stash->content[i] = '\n')
+			if (stash->content[i] == '\n')
 			{
 				(*line)[j++] = stash->content[i];
 				break;
@@ -105,12 +109,15 @@ void	extract_line(t_list *stash, char **line)
 	(*line)[j] = '\0';
 }
 
-void	clean_stash()
+/*After extracting the line that was read, we do not need those characters anymore.
+This function clears the stash so only the characters that have not been returned at
+the end of get_next_line() remain in our static stash*/
+void	clean_stash(t_list **stash)
 {
 	t_list	*last;
 	t_list	*clean_node;
-	int	i;
-	int	j;
+	int		i;
+	int		j;
 
 	clean_node = malloc(sizeof(t_list));
 	if (stash == NULL || clean_node == NULL)
@@ -125,6 +132,7 @@ void	clean_stash()
 	clean_node->content = malloc(sizeof(char) * (ft_strlen(last->content) - i) + 1); //the length of all characters that are in the last element of my stash - the number of characters that have just been counted, since these are the characters that have already been returned. so only the characters will be left that will be kept. +1 for null terminator
 	if (clean_node->content == NULL)
 		return;
+	j = 0;
 	while (last->content[i])
 		clean_node->content[j++] = last->content[i++];
 	clean_node->content[j] = '\0';
