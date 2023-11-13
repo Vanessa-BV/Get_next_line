@@ -7,10 +7,10 @@
 #	define BUFFER_SIZE 5
 # endif
 
-typedef struct s_list
+typedef struct Node
 {
-	void			*content;
-	struct s_list	*next;
+	char		*content;
+	struct Node	*next;
 }	t_list;
 
 char	*get_next_line(int fd);
