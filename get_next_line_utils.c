@@ -43,7 +43,7 @@ void	generate_line(char **line, t_list *stash)
 		i = 0;
 		while (stash->content[i])
 		{
-			if (stash->content[i] = '\n')
+			if (stash->content[i] == '\n')
 			{
 				len++;
 				break;

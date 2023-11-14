@@ -3,15 +3,13 @@
 char	*get_next_line(int fd)
 {
 	char			*line;
-	static t_list	*stash;
-	int				no_char_read;
+	static t_list	*stash = NULL;
 
-	if (fd == -1 || BUFFER_SIZE < 0 || read(fd, &line, 0) == -1)
+	if (fd == -1 || BUFFER_SIZE <= 0 || read(fd, &line, 0) == -1)
 		return NULL;
-	no_char_read = 1;
 	line = NULL;
 	// 1. read from fd and add to linked list
-	read_and_stash(fd, &stash, &no_char_read);
+	ft_read_and_stash(fd, &stash);
 	if (stash == NULL)
 		return (NULL);
 	// 2. extract from stash to line
@@ -22,29 +20,32 @@ char	*get_next_line(int fd)
 	{
 		free_stash(stash);
 		stash = NULL;
+		free(line);
 		return (NULL);
 	}
 	return (line);
 }
 
 /*uses read() to add characters to the stash*/
-void	read_and_stash(int fd, t_list **stash, int *no_char_read)
+void	ft_read_and_stash(int fd, t_list **stash)
 {
 	char	*buff;
+	int		no_char_read;
 
+	no_char_read = 1;
 	while (!found_newline(*stash) && no_char_read != 0)
 	{
 		buff = malloc(sizeof(char) * (BUFFER_SIZE + 1));
 		if (buff == NULL)
-			return;
-		*no_char_read = (int)read(fd, buff, BUFFER_SIZE); //int returns size_t, hence typecasting to int here - but maybe not even necessary..to be tested
-		if ((*stash == NULL && *no_char_read == 0) || *no_char_read == -1)
+			return ;
+		no_char_read = (int)read(fd, buff, BUFFER_SIZE); //int returns size_t, hence typecasting to int here - but maybe not even necessary..to be tested
+		if ((*stash == NULL && no_char_read == 0) || no_char_read == -1)
 		{
 			free(buff);
-			return;
+			return ;
 		}
-		buff[*no_char_read] = '\0';
-		add_to_stash(stash, buff, *no_char_read);
+		buff[no_char_read] = '\0';
+		add_to_stash(stash, buff, no_char_read);
 		free(buff);
 	}
 }
@@ -62,7 +63,7 @@ void	add_to_stash(t_list **stash, char *buff, int no_char_read)
 	new_node->next = NULL;
 	new_node->content = malloc(sizeof(char) * (no_char_read + 1));
 	if (new_node->content == NULL)
-		return;
+		return ;
 	i = 0;
 	while (buff[i] && i < no_char_read)
 	{
@@ -131,7 +132,7 @@ void	clean_stash(t_list **stash)
 		i++;
 	clean_node->content = malloc(sizeof(char) * (ft_strlen(last->content) - i) + 1); //the length of all characters that are in the last element of my stash - the number of characters that have just been counted, since these are the characters that have already been returned. so only the characters will be left that will be kept. +1 for null terminator
 	if (clean_node->content == NULL)
-		return;
+		return ;
 	j = 0;
 	while (last->content[i])
 		clean_node->content[j++] = last->content[i++];
