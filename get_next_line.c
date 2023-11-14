@@ -100,7 +100,7 @@ void	extract_line(t_list *stash, char **line)
 		{
 			if (stash->content[i] == '\n')
 			{
-				(*line)[j++] = stash->content[i];
+				(*line)[j++] = stash->content[i++];
 				break;
 			}
 			(*line)[j++] = stash->content[i++];
