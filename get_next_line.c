@@ -2,162 +2,149 @@
 
 char	*get_next_line(int fd)
 {
-	char			*line;
-	static t_list	*stash = NULL;
+	static char	*stash;
+	char		*line;
+	char		*buffer;
 
-	if (fd == -1 || BUFFER_SIZE <= 0 || read(fd, &line, 0) == -1)
-		return NULL;
-	line = NULL;
-	// 1. read from fd and add to linked list
-	ft_read_and_stash(fd, &stash);
-	if (stash == NULL)
+	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
-	// 2. extract from stash to line
-	extract_line(stash, &line);
-	// 3. clean up stash
-	clean_stash(&stash);
-	if (line[0] == '\0')
+	if (stash != NULL && ft_strchr(stash, '\n') != NULL)
+		line = stash_to_line(stash);
+	else
 	{
-		free_stash(stash);
-		stash = NULL;
-		free(line);
-		return (NULL);
+		buffer = (char *)malloc((BUFFER_SIZE + 1) * sizeof(char));
+		if (buffer == NULL)
+			return (free_all(&stash), NULL);
+		stash = read_and_stash(fd, buffer, stash);
+		if (stash == NULL)
+			return (free_all(&buffer), NULL);
+		free_all(&buffer);
+		line = stash_to_line(stash);
 	}
+	if (line == NULL)
+		return (free_all(&stash), NULL);
+	update_stash(stash);
+	if (*line == '\0')
+		return(free_all(&line), NULL);
 	return (line);
 }
 
-/*uses read() to add characters to the stash*/
-void	ft_read_and_stash(int fd, t_list **stash)
+char	*read_and_stash(int fd, char *buffer, char *str_stash)
 {
-	char	*buff;
-	int		no_char_read;
+	int		bytes_read;
+	char	*temp_stash;
 
-	no_char_read = 1;
-	while (!found_newline(*stash) && no_char_read != 0)
+	bytes_read = 1;
+	if (str_stash == NULL)
+		str_stash = ft_strdup("");
+	if (str_stash == NULL)
+		return (NULL);
+	while (bytes_read != 0)
 	{
-		buff = malloc(sizeof(char) * (BUFFER_SIZE + 1));
-		if (buff == NULL)
-			return ;
-		no_char_read = (int)read(fd, buff, BUFFER_SIZE); //int returns size_t, hence typecasting to int here - but maybe not even necessary..to be tested
-		if ((*stash == NULL && no_char_read == 0) || no_char_read == -1)
-		{
-			free(buff);
-			return ;
-		}
-		buff[no_char_read] = '\0';
-		add_to_stash(stash, buff, no_char_read);
-		free(buff);
+		bytes_read = read(fd, buffer, BUFFER_SIZE);
+		if (bytes_read == -1)
+			return(free_all(&str_stash), NULL);
+		buffer[bytes_read] = '\0';
+		temp_stash = str_stash;
+		str_stash = ft_strjoin(temp_stash, buffer);
+		if (str_stash == NULL)
+			return (free_all(&temp_stash), NULL);
+		free_all(&temp_stash);
+		if (ft_strchr(str_stash, '\n') != NULL)
+			break ;
 	}
+	return (str_stash);
 }
 
-/*adds content of our buffer to the end of our stash*/
-void	add_to_stash(t_list **stash, char *buff, int no_char_read)
+char	*stash_to_line(char *str_stash)
 {
-	int		i;
-	t_list	*last;
-	t_list	*new_node;
+	size_t	i;
+	char	*str_line;
 
-	new_node = malloc(sizeof(t_list));
-	if (new_node == NULL)
-		return ;
-	new_node->next = NULL;
-	new_node->content = malloc(sizeof(char) * (no_char_read + 1));
-	if (new_node->content == NULL)
-		return ;
 	i = 0;
-	while (buff[i] && i < no_char_read)
+	str_line = (char *)malloc((newline_index(str_stash) + 2) * sizeof(char));
+	if (str_line == NULL)
+		return (NULL);
+	while ((str_stash[i]) && str_stash[i] != '\n')
 	{
-		new_node->content[i] = buff[i]; //copy into the new node everything from the buffer that has been read
+		str_line[i] = str_stash[i];
+		if (str_line[0] == '\0')
+			return (free_all(&str_line), NULL);
 		i++;
 	}
-	new_node->content[i] = '\0';
-	if (*stash == NULL)
-	{
-		*stash = new_node;
-		return ;
-	}
-	last = ft_lst_get_last(*stash);
-	last->next = new_node;
+	if (str_stash[i] == '\n')
+		str_line[i++] = '\n';
+	str_line[i] = '\0';
+	return (str_line);
 }
 
-/*extracts all characters from our stash and stores them in our line*/
-/*stopping after the first '\n' it encounters*/
-void	extract_line(t_list *stash, char **line)
+void	update_stash(char *str_stash)
 {
-	int	i;
-	int	j;
+	// size_t	newline_index;
+	char	*source;
+	size_t	i;
 
-	if (stash == NULL)
-		return ;
-	generate_line(line, stash); //sends pointer on pointer to the line that was the first one mentioned in the GNL function above. it will take here a pointet to pointer to char
-	if (*line == NULL)
-		return ;
-	j = 0;
-	while (stash)
-	{
-		i = 0;
-		while (stash->content[i])
-		{
-			if (stash->content[i] == '\n')
-			{
-				(*line)[j++] = stash->content[i++];
-				break;
-			}
-			(*line)[j++] = stash->content[i++];
-		}
-		stash = stash->next;
-	}
-	(*line)[j] = '\0';
-}
-
-/*After extracting the line that was read, we do not need those characters anymore.
-This function clears the stash so only the characters that have not been returned at
-the end of get_next_line() remain in our static stash*/
-void	clean_stash(t_list **stash)
-{
-	t_list	*last;
-	t_list	*clean_node;
-	int		i;
-	int		j;
-
-	clean_node = malloc(sizeof(t_list));
-	if (stash == NULL || clean_node == NULL)
-		return;
-	clean_node->next = NULL;
-	last = ft_lst_get_last(*stash);
 	i = 0;
-	while (last->content[i] && last->content[i] != '\n')
-		i++;
-	if (last->content && last->content[i] == '\n')
-		i++;
-	clean_node->content = malloc(sizeof(char) * (ft_strlen(last->content) - i) + 1); //the length of all characters that are in the last element of my stash - the number of characters that have just been counted, since these are the characters that have already been returned. so only the characters will be left that will be kept. +1 for null terminator
-	if (clean_node->content == NULL)
+	source = ft_strchr(str_stash, '\n');
+	if (source == NULL)
+	{
+		free_all(&str_stash);
 		return ;
-	j = 0;
-	while (last->content[i])
-		clean_node->content[j++] = last->content[i++];
-	clean_node->content[j] = '\0';
-	free_stash(*stash);
-	*stash = clean_node;
+	}
+	source++;
+	while (source[i] != '\0')
+	{
+		str_stash[i] = source[i];
+		i++;
+	}
+	str_stash[i] = '\0';
+	i++;
+	while (str_stash[i] != '\0')
+	{
+		str_stash[i] = '\0';
+		i++;
+	}
+	// newline_index = 0;
+	// while (str_stash[newline_index] != '\n')
+	// 	newline_index++;
+	
+	// ft_memmove(str_stash, str_stash + newline_index + 1,
+	// 	(ft_strlen(str_stash) - newline_index) * sizeof(char));
+	
+}
+
+void	free_all(char **str)
+{
+	if (str != NULL && *str != NULL)
+	{
+		free(*str);
+	}
+	*str = NULL;
 }
 
 // int	main(void)
 // {
-// 	int		file_descriptor;
+// 	int		fd;
 // 	char	*line;
 
-// 	file_descriptor = open("file", O_RDONLY);
-// 	line = get_next_line(file_descriptor);
-// 	if (file_descriptor == -1)
+// 	fd = open("1char.txt", O_RDONLY);
+// 	if (fd < 0)
 // 	{
-// 		printf("File could not be opened.\n");
-// 		return -1;
+// 		printf("Error ocurred while opening the file.\n");
+// 		return (1);
 // 	}
-// 	if (line == NULL)
-// 		printf("No line could be printed.\n");
-// 	else
-// 		printf("%s\n", line);
-// 	close(file_descriptor);
-// 	free (line);
+// 	for (int i = 0; i < 5; i++)
+// 	{
+// 		line = get_next_line(fd);
+// 		printf("%s", line);
+// 		free (line);
+// 	}
+// 	// while ((line = get_next_line(fd)) != NULL)
+// 	// {
+// 	// 	printf("%s", line);
+// 	// 	free_all(&line);
+// 	// }
+// 	close(fd);
 // 	return (0);
 // }
+
