@@ -1,83 +1,112 @@
 #include "get_next_line.h"
 
-/*looks for a newline character in the given linked list*/
-int	found_newline(t_list *stash)
+char	*ft_strchr(const char *s, int c)
 {
-	int		i;
-	t_list	*current;
+	char	ch;
 
-	if (stash == NULL)
+	ch = (char)c;
+	while (*s)
+	{
+		if (*s == ch)
+			return ((char *)s);
+		s++;
+	}
+	if (*s == ch)
+		return ((char *)s + ft_strlen(s));
+	else
 		return (0);
-	current = ft_lst_get_last(stash);
+}
+
+char	*ft_strdup(const char *str)
+{
+	char	*duplicate;
+	int		length;
+
+	length = ft_strlen(str);
+	duplicate = (char *)malloc((length + 1) * sizeof(char));
+	if (duplicate == NULL)
+		return (NULL);
+	ft_strlcpy(duplicate, str, length + 1);
+	return (duplicate);
+}
+
+size_t	newline_index(const char *s)
+{
+	size_t	n;
+
+	n = 0;
+	while (s[n] != '\0' && s[n] != '\n')
+		n++;
+	return (n);
+}
+
+size_t	ft_strlen(const char *s)
+{
+	size_t	n;
+
+	n = 0;
+	while (s[n] != '\0')
+		n++;
+	return (n);
+}
+
+size_t	ft_strlcpy(char *dst, const char *src, size_t size)
+{
+	size_t	i;
+	size_t	src_len;
+
 	i = 0;
-	while (current->content[i])
+	src_len = ft_strlen(src);
+	if (size > 0)
 	{
-		if (current->content[i] == '\n')
-			return (1);
-		i++;
-	}
-	return (0);
-}
-
-/*returns a pointer to the last node in our stash*/
-t_list	*ft_lst_get_last(t_list *stash)
-{
-	t_list	*current;
-
-	current = stash;
-	while (current && current->next)
-		current = current->next;
-	return (current);
-}
-
-/*calculates the number of chars inthe current line, including
-the trailing \n if there is one, and allocates memory accordingly*/
-void	generate_line(char **line, t_list *stash)
-{
-	int	i;
-	int	len;
-
-	len = 0;
-	while (stash)
-	{
-		i = 0;
-		while (stash->content[i])
+		while (size > 1 && src[i] != '\0')
 		{
-			if (stash->content[i] == '\n')
-			{
-				len++;
-				break;
-			}
-			len++;
+			dst[i] = src[i];
 			i++;
+			size--;
 		}
-		stash = stash->next;
+		dst[i] = '\0';
 	}
-	*line = malloc(sizeof(char) * (len + 1));
+	return (src_len);
 }
 
-/*frees the entire stash*/
-void	free_stash(t_list *stash)
+char	*ft_strjoin(char const *s1, char const *s2)
 {
-	t_list	*current;
-	t_list	*next;
+	char	*new_str;
+	char	*temp;
 
-	current = stash;
-	while (current)
+	if (s1 == NULL || s2 == NULL)
+		return (NULL);
+	new_str = (char *)malloc((ft_strlen(s1)
+				+ ft_strlen(s2) + 1)  * sizeof(char));
+	if (new_str == NULL)
+		return (NULL);
+	temp = new_str;
+	ft_strlcpy(new_str, s1, ft_strlen(s1) + 1);
+	new_str += ft_strlen(s1);
+	ft_strlcpy(new_str, s2, ft_strlen(s2) + 1);
+	return (temp);
+}
+
+void	*ft_memmove(void *dest, const void *src, size_t n)
+{
+	char	*destination;
+	char	*source;
+	size_t	i;
+
+	destination = (char *)dest;
+	source = (char *)src;
+	i = 0;
+	if (destination < source)
+		ft_strlcpy(destination, source, n);
+	else if (destination > source)
 	{
-		free(current->content);
-		next = current->next;
-		free(current);
-		current = next;
+		i = n;
+		while (i > 0)
+		{
+			destination[i - 1] = source[i - 1];
+			i--;
+		}
 	}
-}
-
-int	ft_strlen(const char *str)
-{
-	int	len;
-
-	len = 0;
-	while  (*str++)
-		len++;
-	return (len);
+	return (destination);
 }
